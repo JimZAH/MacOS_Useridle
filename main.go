@@ -8,6 +8,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	lockfile "github.com/nightlyone/lockfile"
+
 	homeassist "github.com/user_idle/homeassist_mqtt"
 	"github.com/user_idle/macos_idle"
 )
@@ -15,6 +17,7 @@ import (
 const (
 	// Config file name
 	configF = "config.yaml"
+	lockF   = ".user_idle"
 )
 
 // Struct to contain config
@@ -49,13 +52,24 @@ func main() {
 	var timer uint
 	c.loadConf()
 
+	// is there another instance of user idle running?
+
+	lock, err := lockfile.New("/tmp/" + lockF)
+	if err != nil {
+		log.Fatal("Unable to create lock file", err)
+	}
+
+	if err = lock.TryLock(); err != nil {
+		log.Fatal("Cannot lock, reason:", err)
+	}
+
 	// If the user has specified debug then print program information
 	if c.Debug {
 		fmt.Println("Version 1.0 - (C) Jim Colderwood\nConfig Array: ", c)
 	}
 
 	// Setup MQTT handler
-	// TODO Error checking needs to return error
+
 	client := homeassist.Connect(c.MqttBroker, c.MqttPort, c.MqttUser, c.MqttPass, c.Debug)
 	client.Connect()
 
