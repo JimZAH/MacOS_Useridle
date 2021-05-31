@@ -29,7 +29,7 @@ type config struct {
 	MqttTopic    string `yaml:"mqtt_topic"`
 	ActivityTime uint   `yaml:"activity_time"`
 	Debug        bool   `yaml:"debug"`
-	KeepAlive    uint   `yaml:"keep_alive"`
+	KeepAlive    int    `yaml:"keep_alive"`
 }
 
 // Read local config file
@@ -48,8 +48,7 @@ func (c *config) loadConf() *config {
 func main() {
 	// Create a config object
 	var c config
-	frun := true
-	var timer uint
+	var timer = -1
 	c.loadConf()
 
 	// is there another instance of user idle running?
@@ -76,17 +75,13 @@ func main() {
 	// Main loop
 	for {
 		time.Sleep(1 * time.Second)
-		timer++
-		if macos_idle.Check() < c.ActivityTime && timer >= c.KeepAlive || frun {
+		if macos_idle.Check() < c.ActivityTime && timer >= c.KeepAlive || timer == -1 {
 			if c.Debug {
 				fmt.Println("Sending Keep Alive!")
-			}
-			// If start up send packet then set first run false
-			if frun {
-				frun = !frun
 			}
 			homeassist.Publish(client, c.MqttTopic)
 			timer = 0
 		}
+		timer++
 	}
 }
