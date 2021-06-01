@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -46,6 +49,10 @@ func (c *config) loadConf() *config {
 }
 
 func main() {
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
 	// Create a config object
 	var c config
 	var timer = -1
@@ -61,6 +68,20 @@ func main() {
 	if err = lock.TryLock(); err != nil {
 		log.Fatal("Cannot lock, reason:", err)
 	}
+
+	// Clean up on exit
+
+	go func() {
+		sig := <-sigs
+		switch sig {
+		case os.Interrupt, syscall.SIGKILL, syscall.SIGTERM:
+			err = lock.Unlock()
+			if err != nil {
+				fmt.Println("I was unable to release the lock, You'll need to remove the lock file manually.")
+			}
+			os.Exit(0)
+		}
+	}()
 
 	// If the user has specified debug then print program information
 	if c.Debug {
