@@ -51,7 +51,7 @@ func (c *config) loadConf() *config {
 func main() {
 	sigs := make(chan os.Signal, 1)
 
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	// Create a config object
 	var c config
