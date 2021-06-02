@@ -16,7 +16,9 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 }
 
 func Publish(client mqtt.Client, topic string) {
+
 	// Publish the ACK message on chosen topic
+
 	text := "ACK"
 	token := client.Publish(topic, 0, false, text)
 	token.Wait()
@@ -24,7 +26,9 @@ func Publish(client mqtt.Client, topic string) {
 }
 
 func Connect(broker string, port int, user string, pass string, debug bool) mqtt.Client {
+
 	// Load MQTT settings
+
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
 	opts.SetClientID("user_idle")
@@ -34,6 +38,8 @@ func Connect(broker string, port int, user string, pass string, debug bool) mqtt
 	opts.OnConnectionLost = connectLostHandler
 
 	// Create client and return client to caller
+
 	client := mqtt.NewClient(opts)
+
 	return client
 }
