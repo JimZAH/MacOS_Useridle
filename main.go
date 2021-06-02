@@ -49,14 +49,17 @@ func (c *config) loadConf() *config {
 }
 
 func main() {
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	// Create a config object
+
 	var c config
 	var timer = -1
 	c.loadConf()
+
+	// Signal channels
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	// is there another instance of user idle running?
 
@@ -84,6 +87,7 @@ func main() {
 	}()
 
 	// If the user has specified debug then print program information
+
 	if c.Debug {
 		fmt.Println("Version 1.0 - (C) Jim Colderwood\nConfig Array: ", c)
 	}
@@ -91,18 +95,32 @@ func main() {
 	// Setup MQTT handler
 
 	client := homeassist.Connect(c.MqttBroker, c.MqttPort, c.MqttUser, c.MqttPass, c.Debug)
-	client.Connect()
+
+	// TODO: Clean up if broker fails
+
+	if !client.Connect().WaitTimeout(time.Second * 5) {
+		fmt.Println("Unable to connect to MQTT broker")
+		os.Exit(-1)
+	}
 
 	// Main loop
+
 	for {
 		time.Sleep(1 * time.Second)
+
 		if macos_idle.Check() < c.ActivityTime && timer >= c.KeepAlive || timer == -1 {
+
 			if c.Debug {
 				fmt.Println("Sending Keep Alive!")
 			}
+
 			homeassist.Publish(client, c.MqttTopic)
+
 			timer = 0
+
 		}
+
 		timer++
+
 	}
 }
