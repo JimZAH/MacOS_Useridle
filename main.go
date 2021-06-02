@@ -24,6 +24,7 @@ const (
 )
 
 // Struct to contain config
+
 type config struct {
 	MqttBroker   string `yaml:"mqtt_broker"`
 	MqttPort     int    `yaml:"mqtt_port"`
@@ -36,16 +37,33 @@ type config struct {
 }
 
 // Read local config file
+
 func (c *config) loadConf() *config {
+
 	configFile, err := ioutil.ReadFile(configF)
+
 	if err != nil {
 		log.Fatal("Unable to open config file: ", configF)
 	}
+
 	err = yaml.Unmarshal(configFile, c)
+
 	if err != nil {
 		log.Fatal("Something is wrong with the config file! Error: ", err)
 	}
+
 	return c
+}
+
+func wrapup(ec int, lock *lockfile.Lockfile) {
+
+	err := lock.Unlock()
+
+	if err != nil {
+		fmt.Println("I was unable to release the lock, You'll need to remove the lock file manually.")
+	}
+
+	os.Exit(ec)
 }
 
 func main() {
@@ -75,14 +93,12 @@ func main() {
 	// Clean up on exit
 
 	go func() {
+
 		sig := <-sigs
+
 		switch sig {
 		case os.Interrupt, syscall.SIGKILL, syscall.SIGTERM:
-			err = lock.Unlock()
-			if err != nil {
-				fmt.Println("I was unable to release the lock, You'll need to remove the lock file manually.")
-			}
-			os.Exit(0)
+			wrapup(0, &lock)
 		}
 	}()
 
@@ -96,11 +112,9 @@ func main() {
 
 	client := homeassist.Connect(c.MqttBroker, c.MqttPort, c.MqttUser, c.MqttPass, c.Debug)
 
-	// TODO: Clean up if broker fails
-
 	if !client.Connect().WaitTimeout(time.Second * 5) {
 		fmt.Println("Unable to connect to MQTT broker")
-		os.Exit(-1)
+		wrapup(-1, &lock)
 	}
 
 	// Main loop
@@ -115,12 +129,9 @@ func main() {
 			}
 
 			homeassist.Publish(client, c.MqttTopic)
-
 			timer = 0
 
 		}
-
 		timer++
-
 	}
 }
