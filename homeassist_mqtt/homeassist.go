@@ -22,6 +22,9 @@ func Publish(client mqtt.Client, topic string) {
 	text := "ACK"
 	token := client.Publish(topic, 0, false, text)
 	token.Wait()
+	if token.Error() != nil {
+		fmt.Println("Error: ", token.Error())
+	}
 	time.Sleep(time.Second)
 }
 
