@@ -112,8 +112,13 @@ func main() {
 
 	client := homeassist.Connect(c.MqttBroker, c.MqttPort, c.MqttUser, c.MqttPass, c.Debug)
 
+	// Check we are able to communicate with the MQTT Broker.
+
 	if !client.Connect().WaitTimeout(time.Second * 5) {
-		fmt.Println("Unable to connect to MQTT broker")
+		fmt.Println("Unable to connect to MQTT broker, is the host up? Host:", c.MqttBroker)
+		wrapup(-1, &lock)
+	} else if !client.IsConnected() {
+		fmt.Println("Unable to connect to MQTT broker, is the host correct? Host:", c.MqttBroker)
 		wrapup(-1, &lock)
 	}
 
