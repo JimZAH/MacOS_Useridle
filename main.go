@@ -23,6 +23,11 @@ const (
 	lockF   = ".user_idle"
 )
 
+// Get users home location
+
+var configPath, configPathError = os.UserHomeDir()
+var configFile = configPath + "/" + configF
+
 // Struct to contain config
 
 type config struct {
@@ -40,13 +45,17 @@ type config struct {
 
 func (c *config) loadConf() *config {
 
-	configFile, err := ioutil.ReadFile(configF)
-
-	if err != nil {
-		log.Fatal("Unable to open config file: ", configF)
+	if configPathError != nil {
+		log.Fatal("Error with config path: ", configPathError)
 	}
 
-	err = yaml.Unmarshal(configFile, c)
+	configData, err := ioutil.ReadFile(configFile)
+
+	if err != nil {
+		log.Fatal("Unable to open config file: ", configFile)
+	}
+
+	err = yaml.Unmarshal(configData, c)
 
 	if err != nil {
 		log.Fatal("Something is wrong with the config file! Error: ", err)
